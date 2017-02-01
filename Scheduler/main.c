@@ -104,7 +104,6 @@ void parseInputFile()
          // If '#', the rest of the line is a comment.
          if ((strcmp(token, "#") == 0) || (strcmp(token, "end") == 0))
          {
-            printf("");
             break;
          }
          else if (strcmp(token, "processcount") == 0)
