@@ -1,2 +1,2 @@
 all: main.c
-	gcc -o scheduler main.c
+	gcc -g -o scheduler main.c
