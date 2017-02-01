@@ -36,13 +36,16 @@ typedef struct
 /** Prototypes **/
 void parseInputFile();
 void printConfiguration();
+void runFCFS();
+void runSJF();
+void runRR();
 
 /** Globals **/
 int processCount;
 process* processes;
 int processesIndex = 0;
 int runtime;
-schedulerTypeEnum type;
+schedulerTypeEnum schedulerType;
 int quantum;
 
 int main(int argc, char *argv[])
@@ -52,7 +55,28 @@ int main(int argc, char *argv[])
    printConfiguration();
 
    // Based on the scheduling type, use the appropriate scheduling algorithm.
-//   switch ()
+   switch (schedulerType)
+   {
+      case FirstComeFirstServed:
+      {
+         runFCFS();
+         break;
+      }
+
+      case ShortestJobFirst:
+      {
+         runSJF();
+         break;
+      }
+
+      case RoundRobin:
+      {
+         runRR();
+         break;
+      }
+      default:
+         break;
+   }
 
    free(processes);
    return 0;
@@ -100,15 +124,15 @@ void parseInputFile()
 
             if (strcmp(token, "fcfs") == 0)
             {
-               type = FirstComeFirstServed;
+               schedulerType = FirstComeFirstServed;
             }
             else if (strcmp(token, "sjf") == 0)
             {
-               type = ShortestJobFirst;
+               schedulerType = ShortestJobFirst;
             }
             else if (strcmp(token, "rr") == 0)
             {
-               type = RoundRobin;
+               schedulerType = RoundRobin;
             }
             // Handle error
             else
@@ -164,9 +188,25 @@ void parseInputFile()
    fclose(inputFile);
 }
 
+// Print basic information about the data that is about to be processed.
 void printConfiguration()
 {
    printf("%d processes\n", processCount);
-   printf("Using %s\n", schedulerTypeString[type]);
+   printf("Using %s\n", schedulerTypeString[schedulerType]);
    printf("Quantum %d\n\n", quantum);
+}
+
+void runFCFS()
+{
+
+}
+
+void runSJF()
+{
+
+}
+
+void runRR()
+{
+
 }
