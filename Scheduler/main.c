@@ -195,6 +195,38 @@ void printConfiguration()
    printf("Quantum %d\n\n", quantum);
 }
 
+/** Standard prints used in each algorithm **/
+void printProcessArrived(int time, char* name)
+{
+   printf("Time %d: %s arrived\n", time, name);
+}
+
+void printProcessSelected(int time, char* name, int burstRemaining)
+{
+   printf("Time %d: %s selected (burst %d)\n", time, name, burstRemaining);
+}
+
+void printProcessFinished(int time, char* name)
+{
+   printf("Time %d: %s finished\n", time, name);
+}
+
+void printIdle(int time)
+{
+   printf("Time %d: Idle\n", time);
+}
+
+void printSchedulerFinished(int time)
+{
+   printf("Finished at time %d\n", time);
+}
+
+void printProcessStats(char* name, int wait, int turnaround)
+{
+   printf("%s wait %d turnaround %d\n", name, wait, turnaround);
+}
+
+/** Scheduling algorithms **/
 void runFCFS()
 {
 
