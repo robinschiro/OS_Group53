@@ -5,6 +5,10 @@
 #define INPUT_FILE_NAME "processes.in"
 #define OUTPUT_FILE_NAME "processes.out"
 #define BUFFER_MAX_SIZE 256
+#define BOOL int
+#define TRUE 1
+#define FALSE 0
+#define MAX_INT 2147483647
 
 /** Datatypes **/
 // Scheduler type enum declaration (and corresponding string array)
@@ -30,7 +34,12 @@ typedef struct
 {
    char name[10];
    int arrival;
+   // If this is true, then the process has arrived and has not finished.
+   BOOL isReady;
    int burst;
+   int wait;
+   int startTime;
+   int endTime;
 } process;
 
 /** Prototypes **/
@@ -43,15 +52,21 @@ void runRR();
 /** Globals **/
 int processCount;
 process* processes;
-int processesIndex = 0;
 int runtime;
 schedulerTypeEnum schedulerType;
 int quantum;
+FILE* outputFile;
 
 int main(int argc, char *argv[])
 {
+   // Open the output file for writing.
+   // This should be done before anything else.
+   outputFile = fopen(OUTPUT_FILE_NAME, "w");
+
+   // Parse the input file.
    parseInputFile();
 
+   // Print relevant information about the set of processes to be scheduled.
    printConfiguration();
 
    // Based on the scheduling type, use the appropriate scheduling algorithm.
@@ -78,7 +93,10 @@ int main(int argc, char *argv[])
          break;
    }
 
+   // Close the output file and free memory used for the processes.
+   fclose(outputFile);
    free(processes);
+
    return 0;
 }
 
@@ -88,10 +106,10 @@ int main(int argc, char *argv[])
 void parseInputFile()
 {
    FILE* inputFile = fopen(INPUT_FILE_NAME, "r");
-   FILE* outputFile = fopen(OUTPUT_FILE_NAME, "w");
    char buffer[BUFFER_MAX_SIZE];
    char* token;
    char* delims = " \t\n\r";
+   int processesIndex = 0;
 
    // Read each line of the file.
    while (fgets(buffer, BUFFER_MAX_SIZE, inputFile))
@@ -190,40 +208,53 @@ void parseInputFile()
 // Print basic information about the data that is about to be processed.
 void printConfiguration()
 {
-   printf("%d processes\n", processCount);
-   printf("Using %s\n", schedulerTypeString[schedulerType]);
-   printf("Quantum %d\n\n", quantum);
+   char quantumStatement[50];
+   sprintf(quantumStatement, "Quantum %d\n\n", quantum);
+   fprintf(outputFile, "%d processes\n", processCount);
+   fprintf(outputFile, "Using %s\n%s", schedulerTypeString[schedulerType],
+           (RoundRobin == schedulerType) ? (quantumStatement) : ("\n"));
 }
 
 /** Standard prints used in each algorithm **/
-void printProcessArrived(int time, char* name)
+void setProcessArrived(int time, process* p)
 {
-   printf("Time %d: %s arrived\n", time, name);
+   p->isReady = TRUE;
+   p->startTime = time;
+   fprintf(outputFile, "Time %d: %s arrived\n", time, p->name);
 }
 
-void printProcessSelected(int time, char* name, int burstRemaining)
+void printProcessSelected(int time, process* p)
 {
-   printf("Time %d: %s selected (burst %d)\n", time, name, burstRemaining);
+   fprintf(outputFile, "Time %d: %s selected (burst %d)\n", time, p->name, p->burst);
 }
 
-void printProcessFinished(int time, char* name)
+void setProcessFinished(int time, process* p)
 {
-   printf("Time %d: %s finished\n", time, name);
+   p->isReady = FALSE;
+   p->endTime = time;
+   fprintf(outputFile, "Time %d: %s finished\n", time, p->name);
 }
 
 void printIdle(int time)
 {
-   printf("Time %d: Idle\n", time);
+   fprintf(outputFile, "Time %d: IDLE\n", time);
 }
 
 void printSchedulerFinished(int time)
 {
-   printf("Finished at time %d\n", time);
+   fprintf(outputFile, "Finished at time %d\n\n", time);
 }
 
-void printProcessStats(char* name, int wait, int turnaround)
+void printProcessStats(process* processArray, int count)
 {
-   printf("%s wait %d turnaround %d\n", name, wait, turnaround);
+   int i;
+   for (i = 0; i < count; i++)
+   {
+      fprintf(outputFile, "%s wait %d turnaround %d\n", processArray[i].name,
+                                                        processArray[i].wait,
+                                                        processArray[i].endTime - processArray[i].startTime);
+   }
+
 }
 
 /** Scheduling algorithms **/
@@ -232,9 +263,75 @@ void runFCFS()
 
 }
 
+// Implementation of the pre-emptive shortest job first scheduling algorithm.
+// It is Inefficient because processes are not stored in a data structure
+// that maintains ordering based on burst time.
 void runSJF()
 {
+   int idxOfCurrent = -1;
 
+   // Iterate through each time slot of the total runtime.
+   int time;
+   for (time = 0; time < runtime; time++)
+   {
+      // Determine if current process has finished.
+      if ((-1 != idxOfCurrent) && (0 == processes[idxOfCurrent].burst))
+      {
+         setProcessFinished(time, &processes[idxOfCurrent]);
+         idxOfCurrent = -1;
+      }
+
+      int idxOfSelected = -1;
+      int minBurst = MAX_INT;
+
+      // Iterate through all the processes.
+      int i;
+      for (i = 0; i < processCount; i++)
+      {
+         // Determine if a process arrives at this time.
+         if (time == processes[i].arrival)
+         {
+            setProcessArrived(time, &processes[i]);
+         }
+
+         // Out of ready processes, select the one that has shortest current burst time.
+         if (processes[i].isReady && (processes[i].burst < minBurst))
+         {
+            idxOfSelected = i;
+            minBurst = processes[i].burst;
+         }
+      }
+
+      // Update the wait times of ready processes that were not selected.
+      for (i = 0; i < processCount; i++)
+      {
+         // Out of ready processes, select the one that has shortest current burst time.
+         if (processes[i].isReady && (i != idxOfSelected))
+         {
+            processes[i].wait++;
+         }
+      }
+
+      // Only log the selection if the process is not currently running.
+      if (idxOfSelected != idxOfCurrent)
+      {
+         idxOfCurrent = idxOfSelected;
+         printProcessSelected(time, &processes[idxOfCurrent]);
+      }
+
+      // Update the remaining burst time of current process.
+      if (-1 != idxOfCurrent)
+      {
+         processes[idxOfCurrent].burst--;
+      }
+      else
+      {
+         printIdle(time);
+      }
+   }
+
+   printSchedulerFinished(time);
+   printProcessStats(processes, processCount);
 }
 
 void runRR()
