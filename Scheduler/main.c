@@ -62,6 +62,11 @@ int main(int argc, char *argv[])
    // Open the output file for writing.
    // This should be done before anything else.
    outputFile = fopen(OUTPUT_FILE_NAME, "w");
+   if (outputFile == NULL)
+   {
+     fprintf(stderr, "Can't open output file %s\n", OUTPUT_FILE_NAME);
+     exit(-1);
+   }
 
    // Parse the input file.
    parseInputFile();
@@ -106,6 +111,12 @@ int main(int argc, char *argv[])
 void parseInputFile()
 {
    FILE* inputFile = fopen(INPUT_FILE_NAME, "r");
+   if (inputFile == NULL)
+   {
+      fprintf(stderr, "Can't open input file %s\n", INPUT_FILE_NAME);
+      exit(-1);
+   }
+
    char buffer[BUFFER_MAX_SIZE];
    char* token;
    char* delims = " \t\n\r";
@@ -250,9 +261,14 @@ void printProcessStats(process* processArray, int count)
    int i;
    for (i = 0; i < count; i++)
    {
-      fprintf(outputFile, "%s wait %d turnaround %d\n", processArray[i].name,
-                                                        processArray[i].wait,
-                                                        processArray[i].endTime - processArray[i].startTime);
+      if(processArray[i].endTime > 0)
+         fprintf(outputFile, "%s wait %d turnaround %d\n", processArray[i].name,
+                                                           processArray[i].wait,
+                                                           processArray[i].endTime - processArray[i].startTime);
+      else
+         fprintf(outputFile, "%s wait %d start %d didn't finish\n", processArray[i].name,
+                                                                    processArray[i].startTime,
+                                                                    processArray[i].wait);
    }
 
 }
@@ -260,7 +276,68 @@ void printProcessStats(process* processArray, int count)
 /** Scheduling algorithms **/
 void runFCFS()
 {
+   int idxOfCurrent = -1;
 
+   // Iterate through each time slot of the total runtime.
+   int time;
+   for (time = 0; time < runtime; time++)
+   {
+      // Determine if current process has finished.
+      if ((-1 != idxOfCurrent) && (0 == processes[idxOfCurrent].burst))
+      {
+         setProcessFinished(time, &processes[idxOfCurrent]);
+         idxOfCurrent = -1;
+      }
+
+      int idxOfSelected = -1;
+
+      // Iterate through all the processes.
+      int i;
+      for (i = 0; i < processCount; i++)
+      {
+         // Determine if a process arrives at this time.
+         if (time == processes[i].arrival)
+         {
+            setProcessArrived(time, &processes[i]);
+            idxOfSelected = i;
+         }
+
+         // Out of ready processes, select the any that arrive at this time.
+         if (processes[i].isReady)
+         {
+            idxOfSelected = i;
+         }
+      }
+
+      // Update the wait times of ready processes that were not selected.
+      for (i = 0; i < processCount; i++)
+      {
+         if (processes[i].isReady && (i != idxOfSelected))
+         {
+            processes[i].wait++;
+         }
+      }
+
+      // Only log the selection if the process is not currently running.
+      if (idxOfSelected != idxOfCurrent)
+      {
+         idxOfCurrent = idxOfSelected;
+         printProcessSelected(time, &processes[idxOfCurrent]);
+      }
+
+      // Update the remaining burst time of current process.
+      if (-1 != idxOfCurrent)
+      {
+         processes[idxOfCurrent].burst--;
+      }
+      else
+      {
+         printIdle(time);
+      }
+   }
+
+   printSchedulerFinished(time);
+   printProcessStats(processes, processCount);
 }
 
 // Implementation of the pre-emptive shortest job first scheduling algorithm.
