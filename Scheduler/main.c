@@ -300,7 +300,6 @@ void runFCFS()
          if (time == processes[i].arrival)
          {
             setProcessArrived(time, &processes[i]);
-            idxOfSelected = i;
          }
 
          // Out of ready processes, select the any that arrive first.
