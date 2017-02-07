@@ -290,6 +290,7 @@ void runFCFS()
       }
 
       int idxOfSelected = -1;
+      int minArrival = MAX_INT;
 
       // Iterate through all the processes.
       int i;
@@ -302,10 +303,11 @@ void runFCFS()
             idxOfSelected = i;
          }
 
-         // Out of ready processes, select the any that arrive at this time.
-         if (processes[i].isReady)
+         // Out of ready processes, select the any that arrive first.
+         if (processes[i].isReady && (processes[i].arrival < minArrival))
          {
             idxOfSelected = i;
+            minArrival = processes[i].arrival;
          }
       }
 
