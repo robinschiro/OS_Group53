@@ -337,6 +337,14 @@ void runFCFS()
       }
    }
 
+    // Determine if current process has finished.
+    // For when the process happen to finish at the last minute
+   if ((-1 != idxOfCurrent) && (0 == processes[idxOfCurrent].burst))
+   {
+      setProcessFinished(time, &processes[idxOfCurrent]);
+      idxOfCurrent = -1;
+   }
+
    printSchedulerFinished(time);
    printProcessStats(processes, processCount);
 }
