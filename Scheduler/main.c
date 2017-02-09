@@ -424,7 +424,6 @@ void runRR()
 {
    int i, time;
    int turn = 0;
-   int numArrived = 0;
    int idxOfCurrent = -1;
    int quantumRemaining = 0;
    BOOL processFinished = FALSE;
@@ -443,7 +442,6 @@ void runRR()
          if (time == processes[i].arrival)
          {
             setProcessArrived(time, &processes[i]);
-            numArrived++;
          }
       }
 
