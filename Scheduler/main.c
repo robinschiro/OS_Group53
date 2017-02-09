@@ -305,7 +305,6 @@ void runSJF()
       // Update the wait times of ready processes that were not selected.
       for (i = 0; i < processCount; i++)
       {
-         // Out of ready processes, select the one that has shortest current burst time.
          if (processes[i].isReady && (i != idxOfSelected))
          {
             processes[i].wait++;
@@ -334,7 +333,83 @@ void runSJF()
    printProcessStats(processes, processCount);
 }
 
+// Round Robin scheduling algorithm.
 void runRR()
 {
+   int i, time;
+   int turn = 0;
+   int numArrived = 0;
+   int idxOfCurrent = -1;
+   int quantumRemaining = 0;
+   BOOL processFinished = FALSE;
+    
+   for (time = 0; time < runtime; time++)
+   {
+      if ((idxOfCurrent != -1) && (processes[idxOfCurrent].burst == 0))
+      {
+         setProcessFinished(time, &processes[idxOfCurrent]);
+         processFinished = TRUE;
+      }
 
+      for (i = 0; i < processCount; i++)
+      {
+         // Determine if a process arrives at this time.
+         if (time == processes[i].arrival)
+         {
+            setProcessArrived(time, &processes[i]);
+            numArrived++;
+         }
+      }
+
+      if (!quantumRemaining || processFinished)
+      {
+         // Get index at which to start looking for next process to run.
+         i = turn = (idxOfCurrent + 1) % processCount;
+
+         // Starting at 'turn', look through all processes for the next one ready.
+         // If none are ready at or after 'turn', look at indices before it as well.
+         do
+         {
+            if (processes[i].isReady)
+            {
+               printProcessSelected(time, &processes[i]);
+
+               idxOfCurrent = i;
+
+               quantumRemaining = quantum;
+               
+               processFinished = FALSE;
+
+               break;
+            }
+
+            i = (i < processCount) ? (i + 1) : (0);
+
+         } while (i != turn);
+      }
+
+      // Update the burst time and quantum remaining of current process.
+      if (quantumRemaining && !processFinished)
+      {
+         processes[idxOfCurrent].burst--;
+         quantumRemaining--;
+      }
+      else // Enter idle.
+      {
+         printIdle(time);
+         idxOfCurrent = -1;
+      }
+
+      // Update the wait times of ready processes that were not selected.
+      for (i = 0; i < processCount; i++)
+      {
+         if (processes[i].isReady && (i != idxOfCurrent))
+         {
+            processes[i].wait++;
+         }
+      }
+   }
+
+   printSchedulerFinished(time);
+   printProcessStats(processes, processCount);
 }
