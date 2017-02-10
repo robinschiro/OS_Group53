@@ -42,14 +42,14 @@ typedef struct
    int endTime;
 } process;
 
-// Process queue for round robin scheduling
+// Integer queue for round robin scheduling by process index
 typedef struct
 {
-   process *array;
+   int *array;
    int head;
    int tail;
    int capacity;
-} processQueue;
+} integerQueue;
 
 /** Prototypes **/
 void parseInputFile();
@@ -58,13 +58,13 @@ void runFCFS();
 void runSJF();
 void runRR();
 
-BOOL isFull(processQueue *q);
-BOOL isEmpty(processQueue *q);
-void createQueue(processQueue *q, int size);
-void destroyQueue(processQueue *q);
-process dequeue(processQueue *q);
-void enqueue(processQueue *q, process p);
-BOOL contains(processQueue *q, process p);
+BOOL isFull(integerQueue *q);
+BOOL isEmpty(integerQueue *q);
+BOOL contains(integerQueue *q, int key);
+void createQueue(integerQueue *q, int capacity);
+void destroyQueue(integerQueue *q);
+void enqueue(integerQueue *q, int val);
+int dequeue(integerQueue *q);
 
 /** Globals **/
 int processCount;
@@ -521,35 +521,35 @@ void runRR()
    printProcessStats(processes, processCount);
 }
 
-void createQueue(processQueue *q, int size)
+void createQueue(integerQueue *q, int capacity)
 {
-   q->array = calloc(size, sizeof(process *));
+   q->array = calloc(capacity, sizeof(int));
    q->head = q->tail = -1;
-   q->capacity = size;
+   q->capacity = capacity;
 }
 
-void destroyQueue(processQueue *q)
+void destroyQueue(integerQueue *q)
 {
    free(q->array);
    q->head = q->tail = -1;
    q->capacity = 0;
 }
 
-BOOL isEmpty(processQueue *q)
+BOOL isEmpty(integerQueue *q)
 {
    return (q->head == q->tail);
 }
 
-BOOL isFull(processQueue *q)
+BOOL isFull(integerQueue *q)
 {
    return (q->head == (q->tail - q->capacity));
 }
 
-BOOL contains(processQueue *q, process p)
+BOOL contains(integerQueue *q, int key)
 {
    for (int i = 0; i < q->capacity; i++)
    {
-      if (q->array[i].name == p.name)
+      if (q->array[i] == key)
       {
          return TRUE;
       }
@@ -558,13 +558,13 @@ BOOL contains(processQueue *q, process p)
    return FALSE;
 }
 
-void enqueue(processQueue *q, process p)
+void enqueue(integerQueue *q, int val)
 {
    q->tail++;
-   q->array[q->tail % q->capacity] = p;
+   q->array[q->tail % q->capacity] = val;
 }
 
-process dequeue(processQueue *q)
+int dequeue(integerQueue *q)
 {
    q->head++;
    return (q->array[q->head % q->capacity]);
