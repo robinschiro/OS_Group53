@@ -336,7 +336,7 @@ void runFCFS()
    }
 
     // Determine if current process has finished.
-    // For when the process happen to finish at the last minute
+    // For when the process happens to finish at the last tick.
    if ((-1 != idxOfCurrent) && (0 == processes[idxOfCurrent].burst))
    {
       setProcessFinished(time, &processes[idxOfCurrent]);
@@ -413,6 +413,14 @@ void runSJF()
          printIdle(time);
       }
    }
+
+  // Determine if current process has finished.
+  // For when the process happens to finish at the last tick.
+  if ((-1 != idxOfCurrent) && (0 == processes[idxOfCurrent].burst))
+  {
+     setProcessFinished(time, &processes[idxOfCurrent]);
+     idxOfCurrent = -1;
+  }
 
    printSchedulerFinished(time);
    printProcessStats(processes, processCount);
