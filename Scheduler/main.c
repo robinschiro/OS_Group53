@@ -266,9 +266,7 @@ void printProcessStats(process* processArray, int count)
                                                            processArray[i].wait,
                                                            processArray[i].endTime - processArray[i].startTime);
       else
-         fprintf(outputFile, "%s wait %d start %d didn't finish\n", processArray[i].name,
-                                                                    processArray[i].wait,
-                                                                    processArray[i].startTime);
+         fprintf(outputFile, "%s didn't finish\n", processArray[i].name);
    }
 
 }
@@ -338,7 +336,7 @@ void runFCFS()
    }
 
     // Determine if current process has finished.
-    // For when the process happen to finish at the last minute
+    // For when the process happens to finish at the last tick.
    if ((-1 != idxOfCurrent) && (0 == processes[idxOfCurrent].burst))
    {
       setProcessFinished(time, &processes[idxOfCurrent]);
@@ -414,6 +412,14 @@ void runSJF()
          printIdle(time);
       }
    }
+
+  // Determine if current process has finished.
+  // For when the process happens to finish at the last tick.
+  if ((-1 != idxOfCurrent) && (0 == processes[idxOfCurrent].burst))
+  {
+     setProcessFinished(time, &processes[idxOfCurrent]);
+     idxOfCurrent = -1;
+  }
 
    printSchedulerFinished(time);
    printProcessStats(processes, processCount);

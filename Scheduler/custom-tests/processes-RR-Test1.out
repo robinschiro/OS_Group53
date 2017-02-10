@@ -1,0 +1,22 @@
+3 processes
+Using RoundRobin
+Quantum 2
+
+Time 0: P1 arrived
+Time 0: P1 selected (burst 24)
+Time 3: P2 arrived
+Time 4: P3 arrived
+Time 4: P2 selected (burst 3)
+Time 6: P3 selected (burst 3)
+Time 8: P1 selected (burst 20)
+Time 10: P2 selected (burst 1)
+Time 11: P2 finished
+Time 11: P3 selected (burst 1)
+Time 12: P3 finished
+Time 12: P1 selected (burst 18)
+Time 30: P1 finished
+Finished at time 30
+
+P2 wait 5 turnaround 8
+P3 wait 5 turnaround 8
+P1 wait 6 turnaround 30
