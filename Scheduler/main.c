@@ -466,7 +466,10 @@ void runRR()
       // Enqueue process if it ran out of quantum but still has work to do
       if (!quantumRemaining && !processFinished)
       {
-         enqueue(&readyQueue, idxOfCurrent);
+         if(!enqueue(&readyQueue, idxOfCurrent))
+         {
+            fprintf(stderr, "Queue is full. Cannot enqueue idx %d\n", idxOfCurrent);
+         }
       }
 
       // Enqueue newly arrived processes
@@ -475,7 +478,11 @@ void runRR()
          if (time == processes[i].arrival)
          {
             setProcessArrived(time, &processes[i]);
-            enqueue(&readyQueue, i);
+            
+            if(!enqueue(&readyQueue, i))
+            {
+               fprintf(stderr, "Queue is full. Cannot enqueue idx %d\n", i);
+            }
          }
       }
 
