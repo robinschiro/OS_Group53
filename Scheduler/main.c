@@ -42,12 +42,29 @@ typedef struct
    int endTime;
 } process;
 
+// Process queue for round robin scheduling
+typedef struct
+{
+   process *array;
+   int head;
+   int tail;
+   int capacity;
+} processQueue;
+
 /** Prototypes **/
 void parseInputFile();
 void printConfiguration();
 void runFCFS();
 void runSJF();
 void runRR();
+
+BOOL isFull(processQueue *q);
+BOOL isEmpty(processQueue *q);
+void createQueue(processQueue *q, int size);
+void destroyQueue(processQueue *q);
+process dequeue(processQueue *q);
+void enqueue(processQueue *q, process p);
+BOOL contains(processQueue *q, process p);
 
 /** Globals **/
 int processCount;
@@ -433,7 +450,7 @@ void runRR()
    int idxOfCurrent = -1;
    int quantumRemaining = 0;
    BOOL processFinished = FALSE;
-    
+
    for (time = 0; time < runtime; time++)
    {
       if ((idxOfCurrent != -1) && (processes[idxOfCurrent].burst == 0))
@@ -502,4 +519,53 @@ void runRR()
 
    printSchedulerFinished(time);
    printProcessStats(processes, processCount);
+}
+
+void createQueue(processQueue *q, int size)
+{
+   q->array = calloc(size, sizeof(process *));
+   q->head = q->tail = -1;
+   q->capacity = size;
+}
+
+void destroyQueue(processQueue *q)
+{
+   free(q->array);
+   q->head = q->tail = -1;
+   q->capacity = 0;
+}
+
+BOOL isEmpty(processQueue *q)
+{
+   return (q->head == q->tail);
+}
+
+BOOL isFull(processQueue *q)
+{
+   return (q->head == (q->tail - q->capacity));
+}
+
+BOOL contains(processQueue *q, process p)
+{
+   for (int i = 0; i < q->capacity; i++)
+   {
+      if (q->array[i].name == p.name)
+      {
+         return TRUE;
+      }
+   }
+
+   return FALSE;
+}
+
+void enqueue(processQueue *q, process p)
+{
+   q->tail++;
+   q->array[q->tail % q->capacity] = p;
+}
+
+process dequeue(processQueue *q)
+{
+   q->head++;
+   return (q->array[q->head % q->capacity]);
 }
