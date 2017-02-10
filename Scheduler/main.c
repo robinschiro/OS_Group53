@@ -266,9 +266,7 @@ void printProcessStats(process* processArray, int count)
                                                            processArray[i].wait,
                                                            processArray[i].endTime - processArray[i].startTime);
       else
-         fprintf(outputFile, "%s wait %d start %d didn't finish\n", processArray[i].name,
-                                                                    processArray[i].wait,
-                                                                    processArray[i].startTime);
+         fprintf(outputFile, "%s didn't finish\n", processArray[i].name);
    }
 
 }
