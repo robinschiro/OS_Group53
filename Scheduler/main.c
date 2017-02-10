@@ -447,7 +447,6 @@ void runRR()
 {
    int i, time;
    int idxOfCurrent = -1;
-   int idxOfSelected = -1;
    integerQueue readyQueue;
    int quantumRemaining = 0;
    BOOL processFinished = TRUE;
@@ -491,12 +490,11 @@ void runRR()
       // Dequeue next process if the current one is out of time or finished
       if (!quantumRemaining || processFinished)
       {
-         idxOfSelected = dequeue(&readyQueue);
+         idxOfCurrent = dequeue(&readyQueue);
 
-         if (idxOfCurrent != idxOfSelected)
+         if (idxOfCurrent != -1)
          {
-            printProcessSelected(time, &processes[idxOfSelected]);
-            idxOfCurrent = idxOfSelected;
+            printProcessSelected(time, &processes[idxOfCurrent]);
             processFinished = FALSE;
          }
 
