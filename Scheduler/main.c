@@ -454,8 +454,10 @@ void runRR()
 
    createQueue(&readyQueue, processCount);
 
+   // Iterate through each time slot of the total runtime.
    for (time = 0; time < runtime; time++)
    {
+      // Check if the current process has finished all of its work
       if ((idxOfCurrent != -1) && (processes[idxOfCurrent].burst == 0))
       {
          setProcessFinished(time, &processes[idxOfCurrent]);
