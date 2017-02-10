@@ -446,7 +446,6 @@ void runSJF()
 void runRR()
 {
    int i, time;
-   int turn = 0;
    int idxOfCurrent = -1;
    int idxOfSelected = -1;
    integerQueue readyQueue;
@@ -550,19 +549,6 @@ BOOL isEmpty(integerQueue *q)
 BOOL isFull(integerQueue *q)
 {
    return (q->head == (q->tail - q->capacity));
-}
-
-BOOL contains(integerQueue *q, int key)
-{
-   for (int i = 0; i < q->capacity; i++)
-   {
-      if (q->array[i] == key)
-      {
-         return TRUE;
-      }
-   }
-
-   return FALSE;
 }
 
 BOOL enqueue(integerQueue *q, int val)
