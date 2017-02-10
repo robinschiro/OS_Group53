@@ -63,7 +63,7 @@ BOOL isEmpty(integerQueue *q);
 BOOL contains(integerQueue *q, int key);
 void createQueue(integerQueue *q, int capacity);
 void destroyQueue(integerQueue *q);
-void enqueue(integerQueue *q, int val);
+BOOL enqueue(integerQueue *q, int val);
 int dequeue(integerQueue *q);
 
 /** Globals **/
@@ -448,8 +448,12 @@ void runRR()
    int i, time;
    int turn = 0;
    int idxOfCurrent = -1;
+   int idxOfSelected = -1;
+   integerQueue readyQueue;
    int quantumRemaining = 0;
-   BOOL processFinished = FALSE;
+   BOOL processFinished = TRUE;
+
+   createQueue(&readyQueue, processCount);
 
    for (time = 0; time < runtime; time++)
    {
@@ -457,54 +461,49 @@ void runRR()
       {
          setProcessFinished(time, &processes[idxOfCurrent]);
          processFinished = TRUE;
+         idxOfCurrent = -1;
       }
 
+      // Enqueue process if it ran out of quantum but still has work to do
+      if (!quantumRemaining && !processFinished)
+      {
+         enqueue(&readyQueue, idxOfCurrent);
+      }
+
+      // Enqueue newly arrived processes
       for (i = 0; i < processCount; i++)
       {
-         // Determine if a process arrives at this time.
          if (time == processes[i].arrival)
          {
             setProcessArrived(time, &processes[i]);
+            enqueue(&readyQueue, i);
          }
       }
 
+      // Dequeue next process if the current one is out of time or finished
       if (!quantumRemaining || processFinished)
       {
-         // Get index at which to start looking for next process to run.
-         i = turn = (idxOfCurrent + 1) % processCount;
+         idxOfSelected = dequeue(&readyQueue);
 
-         // Starting at 'turn', look through all processes for the next one ready.
-         // If none are ready at or after 'turn', look at indices before it as well.
-         do
+         if (idxOfCurrent != idxOfSelected)
          {
-            if (processes[i].isReady)
-            {
-               printProcessSelected(time, &processes[i]);
+            printProcessSelected(time, &processes[idxOfSelected]);
+            idxOfCurrent = idxOfSelected;
+            processFinished = FALSE;
+         }
 
-               idxOfCurrent = i;
-
-               quantumRemaining = quantum;
-               
-               processFinished = FALSE;
-
-               break;
-            }
-
-            i = (i < processCount) ? (i + 1) : (0);
-
-         } while (i != turn);
+         quantumRemaining = quantum;
       }
 
       // Update the burst time and quantum remaining of current process.
-      if (quantumRemaining && !processFinished)
+      if (idxOfCurrent != -1)
       {
          processes[idxOfCurrent].burst--;
          quantumRemaining--;
       }
-      else // Enter idle.
+      else // Enter idle
       {
          printIdle(time);
-         idxOfCurrent = -1;
       }
 
       // Update the wait times of ready processes that were not selected.
@@ -517,8 +516,16 @@ void runRR()
       }
    }
 
+   // Check for a process that finished at end of runtime
+   if ((idxOfCurrent != -1) && (processes[idxOfCurrent].burst == 0))
+   {
+      setProcessFinished(time, &processes[idxOfCurrent]);
+   }
+
    printSchedulerFinished(time);
    printProcessStats(processes, processCount);
+
+   destroyQueue(&readyQueue);
 }
 
 void createQueue(integerQueue *q, int capacity)
@@ -558,14 +565,26 @@ BOOL contains(integerQueue *q, int key)
    return FALSE;
 }
 
-void enqueue(integerQueue *q, int val)
+BOOL enqueue(integerQueue *q, int val)
 {
+   if (isFull(q))
+   {
+      return FALSE;
+   }
+
    q->tail++;
    q->array[q->tail % q->capacity] = val;
+
+   return TRUE;
 }
 
 int dequeue(integerQueue *q)
 {
+   if (isEmpty(q))
+   {
+      return -1;
+   }
+
    q->head++;
    return (q->array[q->head % q->capacity]);
 }
