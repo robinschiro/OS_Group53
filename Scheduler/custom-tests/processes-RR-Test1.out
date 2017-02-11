@@ -4,19 +4,28 @@ Quantum 2
 
 Time 0: P1 arrived
 Time 0: P1 selected (burst 24)
+Time 2: P1 selected (burst 22)
 Time 3: P2 arrived
 Time 4: P3 arrived
 Time 4: P2 selected (burst 3)
-Time 6: P3 selected (burst 3)
-Time 8: P1 selected (burst 20)
+Time 6: P1 selected (burst 20)
+Time 8: P3 selected (burst 3)
 Time 10: P2 selected (burst 1)
 Time 11: P2 finished
-Time 11: P3 selected (burst 1)
-Time 12: P3 finished
-Time 12: P1 selected (burst 18)
+Time 11: P1 selected (burst 18)
+Time 13: P3 selected (burst 1)
+Time 14: P3 finished
+Time 14: P1 selected (burst 16)
+Time 16: P1 selected (burst 14)
+Time 18: P1 selected (burst 12)
+Time 20: P1 selected (burst 10)
+Time 22: P1 selected (burst 8)
+Time 24: P1 selected (burst 6)
+Time 26: P1 selected (burst 4)
+Time 28: P1 selected (burst 2)
 Time 30: P1 finished
 Finished at time 30
 
-P2 wait 5 turnaround 8
-P3 wait 5 turnaround 8
 P1 wait 6 turnaround 30
+P3 wait 7 turnaround 10
+P2 wait 5 turnaround 8
