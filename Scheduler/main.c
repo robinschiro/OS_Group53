@@ -42,12 +42,29 @@ typedef struct
    int endTime;
 } process;
 
+// Integer queue for round robin scheduling by process index
+typedef struct
+{
+   int *array;
+   int head;
+   int tail;
+   int capacity;
+} integerQueue;
+
 /** Prototypes **/
 void parseInputFile();
 void printConfiguration();
 void runFCFS();
 void runSJF();
 void runRR();
+
+BOOL isFull(integerQueue *q);
+BOOL isEmpty(integerQueue *q);
+BOOL contains(integerQueue *q, int key);
+void createQueue(integerQueue *q, int capacity);
+void destroyQueue(integerQueue *q);
+BOOL enqueue(integerQueue *q, int val);
+int dequeue(integerQueue *q);
 
 /** Globals **/
 int processCount;
@@ -389,7 +406,6 @@ void runSJF()
       // Update the wait times of ready processes that were not selected.
       for (i = 0; i < processCount; i++)
       {
-         // Out of ready processes, select the one that has shortest current burst time.
          if (processes[i].isReady && (i != idxOfSelected))
          {
             processes[i].wait++;
@@ -426,7 +442,142 @@ void runSJF()
    printProcessStats(processes, processCount);
 }
 
+// Round Robin scheduling algorithm.
 void runRR()
 {
+   int i, time;
+   int idxOfCurrent = -1;
+   integerQueue readyQueue;
+   int quantumRemaining = 0;
+   BOOL processFinished = TRUE;
 
+   createQueue(&readyQueue, processCount);
+
+   // Iterate through each time slot of the total runtime.
+   for (time = 0; time < runtime; time++)
+   {
+      // Check if the current process has finished all of its work
+      if ((idxOfCurrent != -1) && (processes[idxOfCurrent].burst == 0))
+      {
+         setProcessFinished(time, &processes[idxOfCurrent]);
+         processFinished = TRUE;
+         idxOfCurrent = -1;
+      }
+
+      // Enqueue process if it ran out of quantum but still has work to do
+      if (!quantumRemaining && !processFinished)
+      {
+         if(!enqueue(&readyQueue, idxOfCurrent))
+         {
+            fprintf(stderr, "Queue is full. Cannot enqueue idx %d\n", idxOfCurrent);
+         }
+      }
+
+      // Enqueue newly arrived processes
+      for (i = 0; i < processCount; i++)
+      {
+         if (time == processes[i].arrival)
+         {
+            setProcessArrived(time, &processes[i]);
+            
+            if(!enqueue(&readyQueue, i))
+            {
+               fprintf(stderr, "Queue is full. Cannot enqueue idx %d\n", i);
+            }
+         }
+      }
+
+      // Dequeue next process if the current one is out of time or finished
+      if (!quantumRemaining || processFinished)
+      {
+         idxOfCurrent = dequeue(&readyQueue);
+
+         if (idxOfCurrent != -1)
+         {
+            printProcessSelected(time, &processes[idxOfCurrent]);
+            processFinished = FALSE;
+         }
+
+         quantumRemaining = quantum;
+      }
+
+      // Update the burst time and quantum remaining of current process.
+      if (idxOfCurrent != -1)
+      {
+         processes[idxOfCurrent].burst--;
+         quantumRemaining--;
+      }
+      else // Enter idle
+      {
+         printIdle(time);
+      }
+
+      // Update the wait times of ready processes that were not selected.
+      for (i = 0; i < processCount; i++)
+      {
+         if (processes[i].isReady && (i != idxOfCurrent))
+         {
+            processes[i].wait++;
+         }
+      }
+   }
+
+   // Check for a process that finished at end of runtime
+   if ((idxOfCurrent != -1) && (processes[idxOfCurrent].burst == 0))
+   {
+      setProcessFinished(time, &processes[idxOfCurrent]);
+   }
+
+   printSchedulerFinished(time);
+   printProcessStats(processes, processCount);
+
+   destroyQueue(&readyQueue);
+}
+
+void createQueue(integerQueue *q, int capacity)
+{
+   q->array = calloc(capacity, sizeof(int));
+   q->head = q->tail = -1;
+   q->capacity = capacity;
+}
+
+void destroyQueue(integerQueue *q)
+{
+   free(q->array);
+   q->head = q->tail = -1;
+   q->capacity = 0;
+}
+
+BOOL isEmpty(integerQueue *q)
+{
+   return (q->head == q->tail);
+}
+
+BOOL isFull(integerQueue *q)
+{
+   return (q->head == (q->tail - q->capacity));
+}
+
+BOOL enqueue(integerQueue *q, int val)
+{
+   if (isFull(q))
+   {
+      return FALSE;
+   }
+
+   q->tail++;
+   q->array[q->tail % q->capacity] = val;
+
+   return TRUE;
+}
+
+int dequeue(integerQueue *q)
+{
+   if (isEmpty(q))
+   {
+      return -1;
+   }
+
+   q->head++;
+   return (q->array[q->head % q->capacity]);
 }
