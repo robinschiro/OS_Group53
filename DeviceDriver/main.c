@@ -81,12 +81,20 @@ void cleanup_module(void)
 
 static int device_open(struct inode* inodep, struct file* filep)
 {
+   // Increment the counter that is keeping track of the number of processes
+   // that have opened the device. This is needed to prevent someone from 
+   // uninstalling the module if it is still in use.
+   try_module_get(THIS_MODULE);
+
    printk(KERN_INFO "Character device opened.\n");
    return 0;
 }
 
 static int device_release(struct inode* inodep, struct file* filep)
 {
+   // Decrement the process usage counter.
+   module_put(THIS_MODULE);
+
    printk(KERN_INFO "Character device closed.\n");
    return 0;
 }
@@ -120,6 +128,7 @@ static ssize_t device_read(struct file* filep, char* output, size_t length, loff
 
    // Log the fact that the device was read from.
    printk(KERN_INFO "Buffer contents read from character device. Length requested: %d\n", length);
+   printk(KERN_INFO "Buffer contents after read: %s\n", buffer);
 
    // Return the size of the buffer contents.
    return numBytesToPop;
@@ -145,9 +154,8 @@ static ssize_t device_write(struct file* filep, const char* message, size_t leng
    // Update number of remaining bytes.
    remainingSpace -= numBytesToPush;
 
-   // Log write success.
-   printk(KERN_INFO "The message was successfully written to the character device.\n");
-   printk(KERN_INFO "Buffer Contents: %s\n", buffer);
+   // Log buffer contents.
+   printk(KERN_INFO "Buffer contents after write: %s\n", buffer);
 
    // This is critical. MUST return the length of the appended message.
    return length;
