@@ -70,3 +70,10 @@ Thumbs.db
 *.dll
 *.exe
 
+# Kernel module files
+*.ko.*
+*.mod.*
+*.o.*
+*.tmp*
+*.symvers
+*.order
