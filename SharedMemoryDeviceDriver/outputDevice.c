@@ -45,11 +45,11 @@ static struct file_operations fops =
 /** Private Global variables **/
 
 static int majorVersion;
-static int remainingSpace = BUFFER_SIZE;
 
 /** Public Global variables **/
 extern char buffer[BUFFER_SIZE + 1];
 extern struct mutex charDeviceMutex;
+extern int remainingSpace;
 
 /** Function Definitions **/
 
@@ -97,7 +97,7 @@ static int device_open(struct inode* inodep, struct file* filep)
    // uninstalling the module if it is still in use.
    try_module_get(THIS_MODULE);
 
-   printk(KERN_INFO "Character device opened.\n");
+   printk(KERN_INFO "Output device opened.\n");
    return 0;
 }
 
@@ -109,7 +109,7 @@ static int device_release(struct inode* inodep, struct file* filep)
    // Decrement the process usage counter.
    module_put(THIS_MODULE);
 
-   printk(KERN_INFO "Character device closed.\n");
+   printk(KERN_INFO "Output device closed.\n");
    return 0;
 }
 
