@@ -12,6 +12,7 @@ OUTPUT_DEVICE_FILE_PATH=/dev/SampleOutputDevice
 
 echo "Removing the previous versions of module..."
 # Continue script even if the following command produce an error.
+# Note: The devices must be removed in the following order because outputDevice depends on inputDevice.
 rmmod outputDevice 2>/dev/null || true
 rmmod inputDevice 2>/dev/null || true
 
@@ -28,10 +29,12 @@ insmod outputDevice.ko
 INPUT_DEVICE_MAJOR_VERSION=$(dmesg | tail -2 | head -1 | awk '{ print $NF }')
 OUTPUT_DEVICE_MAJOR_VERSION=$(dmesg | tail -1 | awk '{ print $NF }')
 
-echo "Creating the device file for major version ${MAJOR_VERSION}..."
+echo "Creating the input device file for major version ${INPUT_DEVICE_MAJOR_VERSION}..."
 rm ${INPUT_DEVICE_FILE_PATH} 2>/dev/null || true
-rm ${OUTPUT_DEVICE_FILE_PATH} 2>/dev/null || true
 mknod ${INPUT_DEVICE_FILE_PATH} c ${INPUT_DEVICE_MAJOR_VERSION} 0
+
+echo "Creating the output device file for major version ${OUTPUT_DEVICE_MAJOR_VERSION}..."
+rm ${OUTPUT_DEVICE_FILE_PATH} 2>/dev/null || true
 mknod ${OUTPUT_DEVICE_FILE_PATH} c ${OUTPUT_DEVICE_MAJOR_VERSION} 0
 
 printf "\nTest Results:\n"
@@ -74,14 +77,3 @@ echo -n ${SAMPLE_TEXT_INPUT} > ${INPUT_DEVICE_FILE_PATH}
 assert "cat ${OUTPUT_DEVICE_FILE_PATH}" "${SAMPLE_TEXT_OUPUT}"
 assert "cat ${OUTPUT_DEVICE_FILE_PATH}" ""
 assert_end write_overflow
-
-# Test 4: Verifying Mutex Lock
-# Attempt to write to the input device while the output device is being accessed.
-# The write should fail.
-nohup tail -f ${OUTPUT_DEVICE_FILE_PATH} &>/dev/null &
-CHILD=$!
-echo -n "test" > ${INPUT_DEVICE_FILE_PATH}
-assert "echo $?" "1"
-kill ${CHILD}
-assert_end resource_locking
-

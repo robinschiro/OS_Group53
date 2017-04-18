@@ -43,7 +43,6 @@ static struct file_operations fops =
 };
 
 /** Private Global variables **/
-
 static int majorVersion;
 
 /** Public Global variables **/
@@ -85,13 +84,6 @@ void cleanup_module(void)
 
 static int device_open(struct inode* inodep, struct file* filep)
 {
-   // Lock the device to prevent it from being read from while it's being written to.
-   if (!mutex_trylock(&charDeviceMutex))
-   {
-      printk(KERN_INFO "This device is currently locked by another process.");
-      return -EBUSY;
-   }
-   
    // Increment the counter that is keeping track of the number of processes
    // that have opened the device. This is needed to prevent someone from 
    // uninstalling the module if it is still in use.
@@ -103,9 +95,6 @@ static int device_open(struct inode* inodep, struct file* filep)
 
 static int device_release(struct inode* inodep, struct file* filep)
 {
-   // Unlock the mutex.
-   mutex_unlock(&charDeviceMutex);
-   
    // Decrement the process usage counter.
    module_put(THIS_MODULE);
 
@@ -114,12 +103,19 @@ static int device_release(struct inode* inodep, struct file* filep)
 }
 
 static ssize_t device_read(struct file* filep, char* output, size_t length, loff_t* offset)
-{   
+{
    // Functions like 'cat' will continue reading until 0 is returned as the output size.
    // Therefore, return 0 if the buffer contents have already been sent to the user.
    if (*offset > 0)
    {
-       return 0;
+      return 0;
+   }
+
+   // Lock the device to prevent it from being written to while it's being read from.
+   if (!mutex_trylock(&charDeviceMutex))
+   {
+      printk(KERN_INFO "Cannot read from device. The data buffer is currently locked by another process.\n");
+      return 0;
    }
 
    // Determine number of bytes to pop from buffer.
@@ -143,6 +139,9 @@ static ssize_t device_read(struct file* filep, char* output, size_t length, loff
    // Log the fact that the device was read from.
    printk(KERN_INFO "Buffer contents read from character device. Length requested: %d\n", length);
    printk(KERN_INFO "Buffer contents after read: %s\n", buffer);
+
+   // Unlock the mutex.
+   mutex_unlock(&charDeviceMutex);
 
    // Return the size of the buffer contents.
    return numBytesToPop;

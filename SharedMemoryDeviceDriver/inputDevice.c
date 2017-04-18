@@ -43,7 +43,6 @@ static struct file_operations fops =
 };
 
 /** Private Global variables **/
-
 static int majorVersion;
 
 /** Public Global variables **/
@@ -93,14 +92,7 @@ void cleanup_module(void)
 }
 
 static int device_open(struct inode* inodep, struct file* filep)
-{
-   // Lock the device to prevent it from being read from while it's being written to.
-   if (!mutex_trylock(&charDeviceMutex))
-   {
-      printk(KERN_INFO "This device is currently locked by another process.");
-      return -EBUSY;
-   }
-   
+{   
    // Increment the counter that is keeping track of the number of processes
    // that have opened the device. This is needed to prevent someone from 
    // uninstalling the module if it is still in use.
@@ -111,10 +103,7 @@ static int device_open(struct inode* inodep, struct file* filep)
 }
 
 static int device_release(struct inode* inodep, struct file* filep)
-{
-   // Unlock the mutex.
-   mutex_unlock(&charDeviceMutex);
-   
+{    
    // Decrement the process usage counter.
    module_put(THIS_MODULE);
 
@@ -131,28 +120,38 @@ static ssize_t device_read(struct file* filep, char* output, size_t length, loff
 
 static ssize_t device_write(struct file* filep, const char* message, size_t length, loff_t* offset)
 {
-   // Copy incoming message to a temporary buffer.
-   char messageBuffer[remainingSpace + 1];
-   int numBytesToPush = (length < remainingSpace) ? (length) : (remainingSpace);
-   strncpy(messageBuffer, message, numBytesToPush);
+   // Lock the device to prevent it from being read from while it's being written to.
+   if (!mutex_trylock(&charDeviceMutex))
+   {
+      printk(KERN_INFO "Cannot write to device. The data buffer is currently locked by another process.\n");
+   }
+   else
+   {
+      // Copy incoming message to a temporary buffer.
+      char messageBuffer[remainingSpace + 1];
+      int numBytesToPush = (length < remainingSpace) ? (length) : (remainingSpace);
+      strncpy(messageBuffer, message, numBytesToPush);
 
-   // Append null-terminating character to properly format the message string.
-   messageBuffer[length] = '\0';
+      // Append null-terminating character to properly format the message string.
+      messageBuffer[numBytesToPush] = '\0';
 
-   // Log message content and length.
-   printk(KERN_INFO "Incoming Message Length: %d. Attempting to write message \"%s\" to character device.\n", length,
-          messageBuffer);
+      // Log message content and length.
+      printk(KERN_INFO "Incoming Message Length: %d. Attempting to write message \"%s\" to character device.\n", length, messageBuffer);
 
-   // Append the message to the internal buffer.
-   strcat(buffer, messageBuffer);
+      // Append the message to the internal buffer.
+      strcat(buffer, messageBuffer);
 
-   // Update number of remaining bytes.
-   remainingSpace -= numBytesToPush;
+      // Update number of remaining bytes.
+      remainingSpace -= numBytesToPush;
 
-   // Log buffer contents.
-   printk(KERN_INFO "Buffer contents after write: %s\n", buffer);
+      // Log buffer contents.
+      printk(KERN_INFO "Buffer contents after write: %s\n", buffer);
 
-   // This is critical. MUST return the length of the appended message.
+      // Unlock the mutex.
+      mutex_unlock(&charDeviceMutex);
+   }
+
+   // This is critical. MUST return the length of the received message.
    return length;
 }
 
